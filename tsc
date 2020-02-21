@@ -69,7 +69,10 @@ checkResourceFiles() {
 
 updateResourceFiles() {
 	echo "Updating resource files!"
-
+	
+	#remove old resourcefiles to free up some disk space
+	rm /var/tmp/resource*
+	
 	RESOURCEFILEURL="$RESOURCESURL/resources-$ARCH-$VERSION.zip"
 	/usr/bin/wget  $RESOURCEFILEURL -O /tmp/resources-$ARCH-$VERSION.zip -T 5 -t 2 -o /dev/null
 	RESULT=$?
