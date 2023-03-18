@@ -1,5 +1,5 @@
 #!/bin/sh
-SCRIPTVERSION="2.60"
+SCRIPTVERSION="2.61"
 #this is the PROD release for TSC helper script
 BETA=false
 SCRIPTURL="https://raw.githubusercontent.com/ToonSoftwareCollective/tscSettings/main"
@@ -407,6 +407,14 @@ toonStore() {
 	killall -9 qt-gui
 }
 
+solarPanel() {
+	echo "$(date '+%d/%m/%Y %H:%M:%S') Solarpanel app  instructed me to do some external scripting"
+	if [ -s /qmf/qml/apps/solarPanel/solarpanelScript.sh ]
+    then
+        /bin/sh /qmf/qml/apps/solarPanel/solarpanelScript.sh
+    fi
+}
+
 postNL() {
 	if [ -s /mnt/data/tsc/postnl.userSettings.json ]
 	then
@@ -699,6 +707,9 @@ do
 				postnl)
 					postNL
 					;;
+				solarPanel)
+					solarPanel
+					;;
 				deletefile)
 					deleteFile
 					;;
@@ -722,4 +733,3 @@ do
 		sleep $WAITTIME
 	fi
 done
-
