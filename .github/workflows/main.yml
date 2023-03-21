@@ -8,14 +8,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BOT_ACCESS_TOKEN }}
       - name: Calculate MD5 sum
         run: |
           md5sum tsc > tsc.md5
       - name: Commit MD5 sum file
         run: |
-          git config --global user.email "igor@ergens.org"
-          git config --global user.name "Igor Ybema"
+          git config --global user.email "info@ergens.org"
+          git config --global user.name "TSC BOT"
           git add tsc.md5
           git commit -m "Add MD5 sum for tsc"
           git push --force
