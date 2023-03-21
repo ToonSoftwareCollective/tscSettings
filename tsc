@@ -1,5 +1,5 @@
 #!/bin/sh
-SCRIPTVERSION="2.60"
+SCRIPTVERSION="2.61"
 #this is the PROD release for TSC helper script
 BETA=false
 SCRIPTURL="https://raw.githubusercontent.com/ToonSoftwareCollective/tscSettings/main"
@@ -558,6 +558,19 @@ getSensors() {
 
 }
 
+
+externalScripting() {
+	WHATTODO=$1
+	echo "$(date '+%d/%m/%Y %H:%M:%S') $WHATTODO app  instructed me to do some external scripting : $WHATTODO.sh"
+	if [ -s /qmf/qml/apps/$WHATTODO/$WHATTODO.sh ]
+    then
+        /bin/sh /qmf/qml/apps/$WHATTODO/$WHATTODO.sh >/dev/null 2>&1 &
+	else
+		echo "/qmf/qml/apps/$WHATTODO/$WHATTODO.sh does not exist"
+    fi
+}
+
+
 ################# main ###################
 
 echo "Starting TSC support script (version $SCRIPTVERSION)"
@@ -672,41 +685,50 @@ do
 
 	fi
 
+
 	if [ -s $COMMANDFILE ]
 	then
-		while IFS='' read -r line || [[ -n "$line" ]]; do
-			echo "$(date '+%d/%m/%Y %H:%M:%S') Command received: $line"
-			case $line in
-				flushfirewall)
-					flushFirewall
-					;;
-				restorerootpassword)
-					restoreRootPassword
-					;;
-				tscupdate)
-					LASTUPDATECHECK=$STARTROUNDTIME
-					checkUpdate
-					;;
-				toonupdate)
-					toonUpdate
-					;;
-				togglebeta)
-					toggleBeta
-					;;
-				toonstore)
-					toonStore
-					;;
-				postnl)
-					postNL
-					;;
-				deletefile)
-					deleteFile
-					;;
-				*) 	
-					echo "$(date '+%d/%m/%Y %H:%M:%S') Command not available: $line"
-					;;	
-			esac
-		done < "$COMMANDFILE"
+		FIRSTPART=`cat $COMMANDFILE | cut -d "-" -f 1`
+		if  [[ $FIRSTPART == "external" ]];
+		then
+			REQUESTINGAPP=`cat $COMMANDFILE | cut -d "-" -f 2`
+			echo "External sh request found (request app): $REQUESTINGAPP"
+		    externalScripting $REQUESTINGAPP
+		else
+			while IFS='' read -r line || [[ -n "$line" ]]; do
+				echo "$(date '+%d/%m/%Y %H:%M:%S') Command received: $line"
+				case $line in
+					flushfirewall)
+						flushFirewall
+						;;
+					restorerootpassword)
+						restoreRootPassword
+						;;
+					tscupdate)
+						LASTUPDATECHECK=$STARTROUNDTIME
+						checkUpdate
+						;;
+					toonupdate)
+						toonUpdate
+						;;
+					togglebeta)
+						toggleBeta
+						;;
+					toonstore)
+						toonStore
+						;;
+					postnl)
+						postNL
+						;;
+					deletefile)
+						deleteFile
+						;;
+					*) 	
+						echo "$(date '+%d/%m/%Y %H:%M:%S') Command not available: $line"
+						;;	
+				esac
+			done < "$COMMANDFILE"
+		fi
 		rm -f $COMMANDFILE
 	fi
 
@@ -722,4 +744,3 @@ do
 		sleep $WAITTIME
 	fi
 done
-
