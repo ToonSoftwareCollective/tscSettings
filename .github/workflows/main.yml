@@ -18,6 +18,6 @@ jobs:
           git config --global user.name "Igor Ybema"
           git add tsc.md5
           git commit -m "Add MD5 sum for tsc"
-          git push
+          git push --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
