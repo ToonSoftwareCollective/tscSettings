@@ -1,5 +1,5 @@
 #!/bin/sh
-SCRIPTVERSION="2.61"
+SCRIPTVERSION="2.62"
 #this is the PROD release for TSC helper script
 BETA=false
 SCRIPTURL="https://raw.githubusercontent.com/ToonSoftwareCollective/tscSettings/main"
@@ -407,18 +407,6 @@ toonStore() {
 	killall -9 qt-gui
 }
 
-postNL() {
-	if [ -s /mnt/data/tsc/postnl.userSettings.json ]
-	then
-        	USERID=`cat /mnt/data/tsc/postnl.userSettings.json | sed 's/,/\n/g' |  grep Userid | sed 's/.*"Userid":"\(.*\)".*/\1/'`
-        	PASSWORD=`cat /mnt/data/tsc/postnl.userSettings.json | sed 's/,/\n/g' |  grep Password | sed 's/.*"Password":"\(.*\)".*/\1/'`
-        	if [ -n "$USERID" ] && [ -n "$PASSWORD" ] &&  [ -s /qmf/qml/apps/postnl/postnl.sh ]
-        	then
-                	/bin/sh /qmf/qml/apps/postnl/postnl.sh -u $USERID -p $PASSWORD -d /tmp/postnl
-        	fi
-	fi
-}
-
 deleteFile() {
 	echo "$(date '+%d/%m/%Y %H:%M:%S') Delete file(s) from /mnt/data/tsc/appData"
 
@@ -716,9 +704,6 @@ do
 						;;
 					toonstore)
 						toonStore
-						;;
-					postnl)
-						postNL
 						;;
 					deletefile)
 						deleteFile
