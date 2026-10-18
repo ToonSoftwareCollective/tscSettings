@@ -1,26 +1,45 @@
-name: Calculate MD5 sum for file
+name: Update MD5 sum for tsc
+
+# Toons compare the md5 of their installed /usr/bin/tsc with tsc.md5 on main
+# to decide whether to self-update, so tsc.md5 must always match tsc on main.
+#
+# main is protected (2 reviews required) and only the tsc-bot user may bypass
+# that, so this job pushes with a tsc-bot personal access token stored in the
+# BOT_ACCESS_TOKEN secret. The token needs "Contents: read and write" on this
+# repository. When it expires this workflow fails at the checkout step with
+# "could not read Username for 'https://github.com'".
+
 on:
   push:
     branches:
       - main
+    paths:
+      - tsc
+
+permissions:
+  contents: read
+
 jobs:
-  calculate-md5:
+  update-md5:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           token: ${{ secrets.BOT_ACCESS_TOKEN }}
+
       - name: Calculate MD5 sum
+        run: md5sum tsc > tsc.md5
+
+      - name: Commit MD5 sum file if changed
         run: |
-          md5sum tsc > tsc.md5
-      - name: Commit MD5 sum file
-        run: |
-          git config --global user.email "info@ergens.org"
-          git config --global user.name "TSC BOT"
+          if git diff --quiet -- tsc.md5
+          then
+            echo "tsc.md5 already up to date"
+            exit 0
+          fi
+          git config user.name "tsc-bot"
+          git config user.email "tsc-bot@users.noreply.github.com"
           git add tsc.md5
-          git commit -m "Add MD5 sum for tsc"
-          git push --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git commit -m "Update MD5 sum for tsc"
+          git push
