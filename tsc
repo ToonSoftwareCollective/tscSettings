@@ -1,5 +1,5 @@
 #!/bin/sh
-SCRIPTVERSION="2.61"
+SCRIPTVERSION="2.62"
 #this is the PROD release for TSC helper script
 BETA=false
 SCRIPTURL="https://raw.githubusercontent.com/ToonSoftwareCollective/tscSettings/main"
@@ -125,20 +125,19 @@ checkCApem() {
                 fi
         fi
 
-	if [ ! -f /usr/local/share/ca-certificates/DomeinServerCA2020.crt ]
+	# the Staat der Nederlanden Domein Server CA 2020 intermediate is no longer published (public PKIoverheid TLS chain was discontinued),
+	# NL-Alert now uses a DigiCert certificate that is covered by the Mozilla bundle. Remove the old intermediate if still present.
+	if [ -f /usr/local/share/ca-certificates/DomeinServerCA2020.crt ]
 	then
-		echo "$(date '+%d/%m/%Y %H:%M:%S') Adding intermediate Staat der Nederlanden Domein Server CA 2020 - for NLalert API"
-		if /usr/bin/curl -Nks https://cert.pkioverheid.nl/DomeinServerCA2020.cer -o /tmp/DomeinServerCA2020.cer
-		then
-			if openssl x509 -inform der -in /tmp/DomeinServerCA2020.cer -out /usr/local/share/ca-certificates/DomeinServerCA2020.crt
-			then
-				UPDATECA=true
-			else
-				echo "$(date '+%d/%m/%Y %H:%M:%S') Openssl DER to PEM failed for intermediate certificate. Trying next time."
-			fi
-		else
-			echo "$(date '+%d/%m/%Y %H:%M:%S') Download failed. Trying next time."
-		fi
+		echo "$(date '+%d/%m/%Y %H:%M:%S') Removing obsolete intermediate Staat der Nederlanden Domein Server CA 2020"
+		rm -f /usr/local/share/ca-certificates/DomeinServerCA2020.crt
+		UPDATECA=true
+	fi
+	# make sure the Mozilla bundle is actually part of the system CA bundle (can be missing after a firmware update)
+	if [ -f /usr/local/share/ca-certificates/mozilla.crt ] && [ ! -e /etc/ssl/certs/mozilla.pem ]
+	then
+		echo "$(date '+%d/%m/%Y %H:%M:%S') Mozilla CA pem file not in system CA bundle. Rebuilding bundle."
+		UPDATECA=true
 	fi
 	if [ "$UPDATECA" = true ] 
 	then
@@ -550,8 +549,10 @@ getSensors() {
 
 	RH=`echo "100 * $E / $ESCUR" | bc -l`
 
-	TVOC=0 ; if [ -s /tmp/tvoc ] ; then TVOC=`cat /tmp/tvoc` ; fi	
-	ECO2=0 ; if [ -s /tmp/eco2 ] ; then ECO2=`cat /tmp/eco2 ` ; fi
+	# only accept integer values, other apps may write NaN or empty values to these files
+	TVOC=0 ; if [ -s /tmp/tvoc ] ; then TVOC=`tr -cd '0-9' < /tmp/tvoc` ; fi
+	ECO2=0 ; if [ -s /tmp/eco2 ] ; then ECO2=`tr -cd '0-9' < /tmp/eco2` ; fi
+	TVOC=${TVOC:-0} ; ECO2=${ECO2:-0} ; INTENSITY=${INTENSITY:-0}
 
 	mkdir -p /qmf/www/tsc/
         printf "{\"temperature\":%.1f, \"humidity\":%.1f, \"tvoc\":%d, \"eco2\":%d, \"intensity\":%d}\n" $CURTEMP $RH $TVOC $ECO2 $INTENSITY > /qmf/www/tsc/sensors
